@@ -1,0 +1,36 @@
+@startuml
+actor User
+participant "Input Manager" as IM #LightBlue
+participant "Event Bus" as EB #LightGreen
+participant "Menu System" as Menu
+participant "Display Manager" as DM
+
+User -> IM: Rotates Menu Potentiometer
+IM -> EB: emit("menu_pot_changed", value)
+EB -> Menu: deliver event
+Menu -> EB: emit("menu_updated", highlight_idx)
+EB -> DM: deliver event
+DM -> DM: OLED highlight moves to new menu item
+
+User -> IM: Presses OK button
+IM -> EB: emit("button_pressed", "ok")
+EB -> Menu: deliver event
+Menu -> EB: emit("submenu_opened", submenu_name)
+EB -> DM: deliver event
+DM -> DM: OLED shows submenu
+
+User -> IM: Rotates Menu Pot again
+IM -> EB: emit("menu_pot_changed", value)
+EB -> Menu: deliver event
+Menu -> EB: emit("menu_updated", highlight_idx)
+EB -> DM: deliver event
+DM -> DM: OLED highlight moves in submenu
+
+User -> IM: Presses OK button
+IM -> EB: emit("button_pressed", "ok")
+EB -> Menu: deliver event
+Menu -> EB: emit("target_selected", target_name)
+EB -> DM: deliver event
+DM -> DM: OLED shows target selection
+
+@enduml

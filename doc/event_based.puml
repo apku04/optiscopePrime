@@ -1,0 +1,21 @@
+@startuml
+actor User
+participant "Input Manager" as IM #LightBlue
+participant "Event Bus" as EB #LightGreen
+participant "Menu System" as Menu
+participant "Motor Controller" as MC
+participant "Display Manager" as DM
+
+User -> IM: Press Manual Mode button
+IM -> EB: emit("menu_selected", "manual")
+EB -> Menu: deliver event
+Menu -> EB: emit("manual_mode_entered")
+EB -> DM: deliver event
+DM -> DM: OLED shows "Manual mode ON"
+IM -> IM: Poll potentiometer (loop)
+IM -> EB: emit("pot_changed", axis, value)
+EB -> MC: deliver event
+MC -> MC: Move motor
+EB -> DM: deliver event (optional)
+DM -> DM: OLED shows position (optional)
+@enduml

@@ -1,0 +1,23 @@
+@startuml
+participant "main.py" as Main
+participant "Input Manager" as Input #LightBlue
+participant "EventBus" as Bus #LightGreen
+participant "Motor Controller" as Motor
+participant "Display Manager" as Display
+
+Main -> Main: Register event handlers
+Main -> Input: Start polling buttons/pots (as tasks)
+
+loop (polling)
+    Input -> Input: Poll button state
+    Input -> Bus: emit("button_pressed", "ok")
+    Bus -> Motor: deliver event (if subscribed)
+    Bus -> Display: deliver event (if subscribed)
+end
+
+note over Motor,Display
+  Each subscribed module reacts:
+  - Motor moves
+  - Display updates
+end note
+@enduml

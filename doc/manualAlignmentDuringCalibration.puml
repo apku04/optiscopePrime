@@ -1,0 +1,41 @@
+@startuml
+actor User
+participant "Input Manager" as IM #LightBlue
+participant "Event Bus" as EB #LightGreen
+participant "Menu System" as Menu
+participant "Calibration Controller" as Cal
+participant "Motor Controller" as MC
+participant "Display Manager" as DM
+
+User -> IM: Selects "Go to Calibration" from menu (pot + OK)
+IM -> EB: emit("menu_pot_changed", value) + emit("button_pressed", "ok")
+EB -> Menu: deliver events
+Menu -> EB: emit("calibration_mode_entered")
+EB -> Cal: deliver event
+
+Cal -> EB: emit("homing_requested")
+EB -> MC: deliver event
+MC -> MC: Run auto homing
+MC -> EB: emit("homing_done")
+EB -> Cal: deliver event
+
+Cal -> EB: emit("prompt_align_target", "Moon")
+EB -> DM: deliver event
+DM -> DM: OLED shows "Align telescope to Moon"
+
+loop (manual alignment)
+    User -> IM: Adjust axis pot
+    IM -> EB: emit("pot_changed", axis, value)
+    EB -> MC: deliver event
+    MC -> MC: Move motor
+    EB -> DM: deliver event (optional)
+    DM -> DM: OLED updates position (optional)
+end
+
+User -> IM: Press OK when satisfied
+IM -> EB: emit("button_pressed", "ok")
+EB -> Cal: deliver event
+Cal -> EB: emit("target_aligned", "Moon")
+' (Repeat prompt_align_target for next target, etc.)
+
+@enduml

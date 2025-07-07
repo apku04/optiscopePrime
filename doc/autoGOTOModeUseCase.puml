@@ -1,0 +1,37 @@
+@startuml
+actor User
+participant "Input Manager" as IM #LightBlue
+participant "Event Bus" as EB #LightGreen
+participant "Menu System" as Menu
+participant "Star GOTO Controller" as GOTO
+participant "Motor Controller" as MC
+participant "Display Manager" as DM
+
+User -> IM: Rotate menu pot to "Auto Mode"
+IM -> EB: emit("menu_pot_changed", value)
+EB -> Menu: deliver event (update highlight)
+
+User -> IM: Press OK button
+IM -> EB: emit("button_pressed", "ok")
+EB -> Menu: deliver event
+Menu -> EB: emit("auto_mode_entered")
+EB -> DM: deliver event
+DM -> DM: OLED shows "Auto Mode"
+
+User -> IM: Rotate pot to select target star/planet
+IM -> EB: emit("goto_pot_changed", value)
+EB -> GOTO: deliver event
+GOTO -> EB: emit("target_selected", "Jupiter")
+EB -> DM: deliver event
+DM -> DM: OLED shows "Target: Jupiter"
+
+User -> IM: Press OK button to confirm
+IM -> EB: emit("button_pressed", "ok")
+EB -> GOTO: deliver event
+GOTO -> EB: emit("goto_requested", "Jupiter")
+EB -> MC: deliver event
+MC -> MC: Run auto slew
+MC -> EB: emit("goto_complete", "Jupiter")
+EB -> DM: deliver event
+DM -> DM: OLED shows "On Target: Jupiter"
+@enduml
