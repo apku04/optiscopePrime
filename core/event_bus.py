@@ -1,25 +1,28 @@
-# core/event_bus.py
 import asyncio
-from collections import defaultdict
-
+import threading
 
 class EventBus:
     def __init__(self):
-        self._subscribers = defaultdict(list)
+        self.subscribers = {}
+        self.loop = None  # Set in main
 
-    def subscribe(self, event_name, handler):
-        self._subscribers[event_name].append(handler)
+    def subscribe(self, event, callback):
+        if event not in self.subscribers:
+            self.subscribers[event] = []
+        self.subscribers[event].append(callback)
 
-    async def emit(self, event_name, *args, **kwargs):
-        tasks = []
-        for handler in self._subscribers[event_name]:
-            if asyncio.iscoroutinefunction(handler):
-                tasks.append(handler(*args, **kwargs))
+    def emit(self, event, data=None):
+        # Always run handlers on the main thread's asyncio loop
+        if self.loop and threading.current_thread() is not threading.main_thread():
+            self.loop.call_soon_threadsafe(self._emit_handlers, event, data)
+        else:
+            self._emit_handlers(event, data)
+
+    def _emit_handlers(self, event, data=None):
+        for cb in self.subscribers.get(event, []):
+            if asyncio.iscoroutinefunction(cb):
+                asyncio.create_task(cb(data))
             else:
-                handler(*args, **kwargs)
-        if tasks:
-            await asyncio.gather(*tasks)
+                cb(data)
 
-
-# THIS IS THE IMPORTANT PART!
 event_bus = EventBus()
