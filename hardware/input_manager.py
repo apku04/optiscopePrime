@@ -1,28 +1,44 @@
 from gpiozero import Button
-from hardware.ads1115 import read_pot_menu
-import time
+import asyncio
 
-OK_BUTTON_PIN = 7
+CLK = 13  # BCM numbering
+DT = 15
+SW = 14
 
 
 class InputManager:
     def __init__(self, event_bus):
         self.event_bus = event_bus
-        self.button = Button(OK_BUTTON_PIN, pull_up=True, bounce_time=0.15)
-        self.button.when_pressed = self.on_ok
-        self.last_pot_value = None
-        self.pot_deadzone = 5000
-        self.pot_history = []
+        self.position = 0
 
-    def poll(self):
-        pot_value = read_pot_menu()
-        self.pot_history.append(pot_value)
-        if len(self.pot_history) > 10:   # adjust smoothing here
-            self.pot_history.pop(0)
-        avg_pot = sum(self.pot_history) // len(self.pot_history)
-        self.event_bus.emit("menu_pot_changed", avg_pot)
+        self.clk = Button(CLK, pull_up=True)
+        self.dt = Button(DT, pull_up=True)
+        self.sw = Button(SW, pull_up=True)
 
-    def on_ok(self):
+        self.last_clk = self.clk.value
+
+        self.clk.when_pressed = self.rotary_changed
+        self.clk.when_released = self.rotary_changed
+
+        self.sw.when_pressed = self.ok_pressed
+
+    def rotary_changed(self):
+        clk_state = self.clk.value
+        dt_state = self.dt.value
+        if clk_state != self.last_clk:
+            if dt_state != clk_state:
+                direction = "right"
+                self.position += 1
+            else:
+                direction = "left"
+                self.position -= 1
+            self.event_bus.emit("input.menu.rotary_changed", direction)
+            self.last_clk = clk_state
+
+    def ok_pressed(self):
         self.event_bus.emit("menu_ok_pressed")
 
-
+    async def poll_inputs(self):
+        # No need for fast polling; events are interrupt-driven
+        while True:
+            await asyncio.sleep(0.05)  # Keep alive for consistency
