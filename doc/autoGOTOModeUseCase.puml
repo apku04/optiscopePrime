@@ -1,5 +1,6 @@
 @startuml
 actor User
+participant "Rotary Encoder\n(CLK/DT, SW)" as Encoder #LightYellow
 participant "Input Manager" as IM #LightBlue
 participant "Event Bus" as EB #LightGreen
 participant "Menu System" as Menu
@@ -7,26 +8,30 @@ participant "Star GOTO Controller" as GOTO
 participant "Motor Controller" as MC
 participant "Display Manager" as DM
 
-User -> IM: Rotate menu pot to "Auto Mode"
-IM -> EB: emit("menu_pot_changed", value)
+User -> Encoder: Rotate knob (left/right)
+Encoder -> IM: GPIO callback (CLK/DT)
+IM -> EB: emit("input.menu.rotary_changed", direction)
 EB -> Menu: deliver event (update highlight)
 
-User -> IM: Press OK button
-IM -> EB: emit("button_pressed", "ok")
+User -> Encoder: Press knob (SW)
+Encoder -> IM: GPIO callback (SW pressed)
+IM -> EB: emit("menu_ok_pressed")
 EB -> Menu: deliver event
 Menu -> EB: emit("auto_mode_entered")
 EB -> DM: deliver event
 DM -> DM: OLED shows "Auto Mode"
 
-User -> IM: Rotate pot to select target star/planet
-IM -> EB: emit("goto_pot_changed", value)
+User -> Encoder: Rotate knob to select target star/planet
+Encoder -> IM: GPIO callback (rotation)
+IM -> EB: emit("input.goto.rotary_changed", direction)
 EB -> GOTO: deliver event
 GOTO -> EB: emit("target_selected", "Jupiter")
 EB -> DM: deliver event
 DM -> DM: OLED shows "Target: Jupiter"
 
-User -> IM: Press OK button to confirm
-IM -> EB: emit("button_pressed", "ok")
+User -> Encoder: Press knob to confirm
+Encoder -> IM: GPIO callback (SW pressed)
+IM -> EB: emit("menu_ok_pressed")
 EB -> GOTO: deliver event
 GOTO -> EB: emit("goto_requested", "Jupiter")
 EB -> MC: deliver event

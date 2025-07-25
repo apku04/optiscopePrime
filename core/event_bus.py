@@ -1,6 +1,7 @@
 import asyncio
 import threading
 
+
 class EventBus:
     def __init__(self):
         self.subscribers = {}
@@ -24,5 +25,6 @@ class EventBus:
                 asyncio.create_task(cb(data))
             else:
                 cb(data)
+
 
 event_bus = EventBus()

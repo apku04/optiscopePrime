@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="bf584b56-fdcd-4ccd-ade1-17c1a0d0dd0a" name="optiprime">
+        <fileTransfer accessType="SFTP" host="optiprime" port="22" sshConfigId="1defebaa-169d-4fb9-a671-39405f5a8b8a" sshConfig="pi@optiprime:22 password">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" keepAliveTimeout="0" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

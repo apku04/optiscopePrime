@@ -1,37 +1,29 @@
 @startuml
 actor User
+participant "Rotary Encoder\n(CLK/DT, SW)" as Encoder #LightYellow
 participant "Input Manager" as IM #LightBlue
 participant "Event Bus" as EB #LightGreen
 participant "Menu System" as Menu
 participant "Motor Controller" as MC
 participant "Display Manager" as DM
 
-User -> IM: Rotate menu pot to "Manual Mode"
-IM -> EB: emit("menu_pot_changed", value)
+User -> Encoder: Rotate knob to select "Manual Mode"
+Encoder -> IM: GPIO callback (CLK/DT)
+IM -> EB: emit("input.menu.rotary_changed", direction)
 EB -> Menu: deliver event (update highlight)
 
-User -> IM: Press OK button
-IM -> EB: emit("button_pressed", "ok")
+User -> Encoder: Press knob (SW)
+Encoder -> IM: GPIO callback (SW pressed)
+IM -> EB: emit("menu_ok_pressed")
 EB -> Menu: deliver event
 Menu -> EB: emit("manual_mode_entered")
 EB -> DM: deliver event
-DM -> DM: OLED shows "Manual Mode ON"
+DM -> DM: OLED shows "Manual mode ON"
+
+IM -> IM: Poll potentiometer(s) for axis (loop)
+IM -> EB: emit("pot_changed", axis, value)
 EB -> MC: deliver event
-MC -> MC: Allow pot control of motors
-
-loop (continuous manual operation)
-    User -> IM: Adjust axis pot
-    IM -> EB: emit("pot_changed", axis, value)
-    EB -> MC: deliver event
-    MC -> MC: Move motor (azimuth/altitude)
-    EB -> DM: deliver event (optional)
-    DM -> DM: OLED updates position (optional)
-end
-
-User -> IM: Press "Menu" or "Back" button
-IM -> EB: emit("button_pressed", "menu")
-EB -> Menu: deliver event
-Menu -> EB: emit("menu_opened")
-EB -> DM: deliver event
-DM -> DM: OLED shows main menu
+MC -> MC: Move motor(s)
+EB -> DM: deliver event (optional)
+DM -> DM: OLED shows position (optional)
 @enduml

@@ -5,6 +5,7 @@ from hardware.input_manager import InputManager
 from core.menu_system import MenuSystem
 import core.manual_mode
 import core.auto_mode
+import core.homing
 
 
 def main():
