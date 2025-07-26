@@ -1,6 +1,6 @@
-# core/manual_mode.py
 from core.mode_manager import switch_mode
 from core.event_bus import event_bus
+from hardware.ads1115 import read_azimuth, read_altitude
 import asyncio
 
 
@@ -8,8 +8,11 @@ async def manual_mode_loop(_=None):
     print("[ManualMode] Entered manual mode loop.")
     try:
         while True:
-            event_bus.emit("pot_changed", 1234)
-            await asyncio.sleep(1)
+            az = read_azimuth()
+            alt = read_altitude()
+            event_bus.emit("pot_changed", ("az", az))
+            event_bus.emit("pot_changed", ("alt", alt))
+            await asyncio.sleep(0.1)
     except asyncio.CancelledError:
         print("[ManualMode] Manual mode cancelled.")
 
