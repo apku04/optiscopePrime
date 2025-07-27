@@ -18,7 +18,6 @@ def show_manual_mode():
     print("Display: Manual mode ON")
 
 
-
 event_bus.subscribe("manual_mode_entered", show_manual_mode)
 event_bus.subscribe("auto_mode_entered", show_auto_mode)
 event_bus.subscribe("goto_calibration_entered", show_calibration)

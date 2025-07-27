@@ -1,6 +1,8 @@
 # core/menu_system.py
 from config.menu import MENU_ITEMS
 from config.fonts import load_fonts
+from textwrap import wrap
+import time
 
 font_normal, font_bold = load_fonts()
 
@@ -47,9 +49,31 @@ class MenuSystem:
 
         self.menu_oled.draw(draw)
 
-    def draw_status(self, msg):
+    def draw_status(self, msg, icon=None, animate=False, frame=None):
+        """
+        Draw a wrapped status message with optional icon and spinner.
+        :param msg: str - status message to display
+        :param icon: str - e.g. "✓", "⚠", None for no icon
+        :param animate: bool - if True, shows a spinner in the corner
+        :param frame: int - required for animate, cycles spinner
+        """
+        spinner_frames = ["-", "\\", "|", "/"]
+        if animate and frame is None:
+            # Use time-based frame if not supplied
+            frame = int(time.time() * 4) % 4
+
         def draw(draw):
             draw.rectangle((0, 0, 128, 128), outline=0, fill=0)
-            draw.text((10, 60), msg, font=font_normal, fill=255)
+            # Word-wrap for 18 chars per line, up to 5 lines
+            lines = wrap(msg, width=18)
+            y = 10
+            for line in lines[:5]:
+                draw.text((10, y), line, font=font_normal, fill=255)
+                y += 12
+            if icon:
+                draw.text((110, 5), icon, font=font_bold, fill=255)
+            if animate:
+                spinner = spinner_frames[frame % len(spinner_frames)]
+                draw.text((110, 110), spinner, font=font_bold, fill=255)
 
         self.status_oled.draw(draw)

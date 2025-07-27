@@ -10,28 +10,35 @@ import core.homing
 import core.stop_mode
 
 
-def main():
+async def main():
     menu_oled = OLEDDisplay(i2c_addr=0x3C)
     status_oled = OLEDDisplay(i2c_addr=0x3D)
     menu_system = MenuSystem(menu_oled, status_oled, event_bus)
     input_manager = InputManager(event_bus)
     stepper_ctrl = StepperController(event_bus, azimuth_invert=True, altitude_invert=False, ms_mode=(1, 1))
+    core.homing.stepper_ctrl = stepper_ctrl
+
+    # Run homing routines BEFORE enabling menu/motion
+    await stepper_ctrl.home_axis("az")
+    stepper_ctrl.az_target = stepper_ctrl.max_steps // 2
+    await stepper_ctrl.home_axis("alt")
+    stepper_ctrl.alt_target = stepper_ctrl.max_steps // 2
 
     print("Telescope menu: Rotate encoder to select, press button to confirm.")
+    menu_system.draw_status("Telescope menu:\nRotate encoder to select,\npress button to confirm.")
     menu_system.draw_menu()
-    menu_system.draw_status("Welcome!")
+    #menu_system.draw_status("Welcome!")
 
-    loop = asyncio.get_event_loop()
-    event_bus.loop = loop
+    event_bus.loop = asyncio.get_running_loop()
+    event_bus.loop.call_soon(stepper_ctrl.start_tasks)
 
-    # 👇 Schedule motor tracking tasks AFTER the event loop starts
-    loop.call_soon(stepper_ctrl.start_tasks)
-
+    # Main loop
     try:
-        loop.run_forever()
+        while True:
+            await asyncio.sleep(1)  # keeps the main coroutine alive
     except KeyboardInterrupt:
         print("Exiting menu...")
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
