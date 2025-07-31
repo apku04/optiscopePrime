@@ -5,6 +5,11 @@ import asyncio
 
 pot_sub = None  # We'll keep track so we can unsubscribe
 
+# Store the last pot value for each axis (for deadband logic)
+last_pot_az = None
+last_pot_alt = None
+POT_DEADBAND = 20  # Change this as needed for your pots
+
 
 async def manual_mode_loop(_=None):
     print("[ManualMode] Entered manual mode loop.")
@@ -20,19 +25,33 @@ async def manual_mode_loop(_=None):
 
 
 def on_pot_changed(data):
+    global last_pot_az, last_pot_alt
     axis, value = data
-    # Access global stepper_ctrl
     import core.homing
     stepper_ctrl = core.homing.stepper_ctrl
-    target = int(value * stepper_ctrl.max_steps / 65535)
+
+    # Map pot value to step range
+    pot_steps = int(value * stepper_ctrl.max_steps / 65535)
     if axis == "az":
-        stepper_ctrl.az_target = target
+        # Only update if user really turned the pot (deadband)
+        if last_pot_az is None or abs(value - last_pot_az) > POT_DEADBAND:
+            target = pot_steps + getattr(stepper_ctrl, 'az_manual_offset', 0)
+            target = max(0, min(target, stepper_ctrl.max_steps))
+            stepper_ctrl.az_target = target
+            last_pot_az = value
     elif axis == "alt":
-        stepper_ctrl.alt_target = target
+        if last_pot_alt is None or abs(value - last_pot_alt) > POT_DEADBAND:
+            target = pot_steps + getattr(stepper_ctrl, 'alt_manual_offset', 0)
+            target = max(0, min(target, stepper_ctrl.max_steps))
+            stepper_ctrl.alt_target = target
+            last_pot_alt = value
 
 
 def start_manual_mode(_=None):
-    global pot_sub
+    global pot_sub, last_pot_az, last_pot_alt
+    # Reset deadband memory when entering manual mode
+    last_pot_az = None
+    last_pot_alt = None
     pot_sub = on_pot_changed
     event_bus.subscribe("pot_changed", pot_sub)
     switch_mode(manual_mode_loop())
@@ -48,4 +67,4 @@ def stop_manual_mode(_=None):
 
 
 event_bus.subscribe("manual_mode_entered", start_manual_mode)
-# (Optional) You could subscribe stop_manual_mode to some event like "manual_mode_exited"
+# Optionally: event_bus.subscribe("manual_mode_exited", stop_manual_mode)

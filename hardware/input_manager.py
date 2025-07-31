@@ -4,6 +4,8 @@ import asyncio
 CLK = 13  # BCM numbering
 DT = 15
 SW = 14
+SYNC_OK_PIN = 7  # SPI_CE1
+
 
 
 class InputManager:
@@ -14,13 +16,22 @@ class InputManager:
         self.clk = Button(CLK, pull_up=True)
         self.dt = Button(DT, pull_up=True)
         self.sw = Button(SW, pull_up=True)
+        self.sync_ok_button = Button(SYNC_OK_PIN, pull_up=True)
 
         self.last_clk = self.clk.value
 
         self.clk.when_pressed = self.rotary_changed
         self.clk.when_released = self.rotary_changed
 
+        self.sync_ok_button.when_pressed = self.sync_ok_pressed
+
         self.sw.when_pressed = self.ok_pressed
+
+    def ok_pressed(self):
+        self.event_bus.emit("menu_ok_pressed")
+
+    def sync_ok_pressed(self):
+        self.event_bus.emit("sync_ok_pressed")
 
     def rotary_changed(self):
         clk_state = self.clk.value

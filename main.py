@@ -18,24 +18,47 @@ async def main():
     stepper_ctrl = StepperController(event_bus, azimuth_invert=True, altitude_invert=False, ms_mode=(1, 1))
     core.homing.stepper_ctrl = stepper_ctrl
 
-    # Run homing routines BEFORE enabling menu/motion
+    # (Optional) Initial status message, just for boot:
+    menu_system.draw_status("Starting up...")
 
-    print("Telescope menu: Rotate encoder to select, press button to confirm.")
-    menu_system.draw_status("Telescope menu:\nRotate encoder to select,\npress button to confirm.")
-    menu_system.draw_menu()
-
+    # 1. Home axes
     await stepper_ctrl.home_axis("az")
-    stepper_ctrl.az_target = 11000
     await stepper_ctrl.home_axis("alt")
+
+    # 2. Move to idle
+    await stepper_ctrl.goto_steps('az', 11000)
+    stepper_ctrl.az_position = 11000
+    stepper_ctrl.az_target = 11000
+    await stepper_ctrl.goto_steps('alt', 3000)
+    stepper_ctrl.alt_position = 3000
     stepper_ctrl.alt_target = 3000
+
+    # 3. Only now, show pot sync message. Do NOT call draw_menu() before sync!
+    menu_system.draw_status("Set both pots to\nmatch position,\nthen press OK")
+
+    # 4. Subscribe a one-time handler for OK
+    def on_sync_ok(_):
+        from hardware.ads1115 import read_azimuth, read_altitude
+        az_pot_val = read_azimuth()
+        alt_pot_val = read_altitude()
+        pot_steps_az = int(az_pot_val * stepper_ctrl.max_steps / 65535)
+        pot_steps_alt = int(alt_pot_val * stepper_ctrl.max_steps / 65535)
+        stepper_ctrl.az_manual_offset = stepper_ctrl.az_position - pot_steps_az
+        stepper_ctrl.alt_manual_offset = stepper_ctrl.alt_position - pot_steps_alt
+
+        # Correct event for unsubscribe
+        event_bus.subscribers["sync_ok_pressed"].remove(on_sync_ok)
+
+        menu_system.draw_menu()
+
+    event_bus.subscribe("sync_ok_pressed", on_sync_ok)
 
     event_bus.loop = asyncio.get_running_loop()
     event_bus.loop.call_soon(stepper_ctrl.start_tasks)
 
-    # Main loop
     try:
         while True:
-            await asyncio.sleep(1)  # keeps the main coroutine alive
+            await asyncio.sleep(1)
     except KeyboardInterrupt:
         print("Exiting menu...")
 

@@ -41,6 +41,8 @@ class StepperController:
             alt_endstop_pin=18,
             deadband=200,
     ):
+        self.az_manual_offset = 0
+        self.alt_manual_offset = 0
         self.event_bus = event_bus
         self.az_motor = StepperMotor(*azimuth_pins, invert_dir=azimuth_invert)
         self.alt_motor = StepperMotor(*altitude_pins, invert_dir=altitude_invert)
