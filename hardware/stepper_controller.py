@@ -1,6 +1,7 @@
 import asyncio
 from gpiozero import OutputDevice, DigitalInputDevice, DigitalOutputDevice
 
+
 class StepperMotor:
     def __init__(self, step_pin, dir_pin, enable_pin, invert_dir=False):
         self.step = OutputDevice(step_pin)
@@ -20,24 +21,25 @@ class StepperMotor:
         self.step.on()
         self.step.off()
 
+
 class StepperController:
     STEPS_PER_DEGREE = 106.4
     MAX_STEPS = 20000
 
     def __init__(
-        self,
-        event_bus,
-        *,
-        azimuth_pins=(25, 4, 24),
-        altitude_pins=(6, 12, 5),
-        azimuth_invert=False,
-        altitude_invert=False,
-        az_ms_pins=(16, 26),
-        alt_ms_pins=(20, 21),
-        ms_mode=(0, 1),
-        az_endstop_pin=17,
-        alt_endstop_pin=18,
-        deadband=200,
+            self,
+            event_bus,
+            *,
+            azimuth_pins=(25, 4, 24),
+            altitude_pins=(6, 12, 5),
+            azimuth_invert=False,
+            altitude_invert=False,
+            az_ms_pins=(16, 26),
+            alt_ms_pins=(20, 21),
+            ms_mode=(0, 1),
+            az_endstop_pin=17,
+            alt_endstop_pin=18,
+            deadband=200,
     ):
         self.event_bus = event_bus
         self.az_motor = StepperMotor(*azimuth_pins, invert_dir=azimuth_invert)
@@ -161,7 +163,7 @@ class StepperController:
         motor.set_direction(True)
         for _ in range(backoff_steps):
             motor.pulse()
-            await asyncio.sleep(fast_delay)
+            await asyncio.sleep(slow_delay)
 
         # Slow approach
         motor.set_direction(False)
@@ -178,8 +180,3 @@ class StepperController:
         print(f"[{axis.upper()}] Homing complete (slow approach)")
         set_pos(0)
         motor.enable_motor(False)
-
-        # Move to center
-        halfway = self.max_steps // 2
-        print(f"[{axis.upper()}] Moving to center: {halfway} steps")
-        await self.goto_steps(axis, halfway)

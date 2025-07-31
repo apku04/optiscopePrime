@@ -19,15 +19,15 @@ async def main():
     core.homing.stepper_ctrl = stepper_ctrl
 
     # Run homing routines BEFORE enabling menu/motion
-    await stepper_ctrl.home_axis("az")
-    stepper_ctrl.az_target = stepper_ctrl.max_steps // 2
-    await stepper_ctrl.home_axis("alt")
-    stepper_ctrl.alt_target = stepper_ctrl.max_steps // 2
 
     print("Telescope menu: Rotate encoder to select, press button to confirm.")
     menu_system.draw_status("Telescope menu:\nRotate encoder to select,\npress button to confirm.")
     menu_system.draw_menu()
-    #menu_system.draw_status("Welcome!")
+
+    await stepper_ctrl.home_axis("az")
+    stepper_ctrl.az_target = 11000
+    await stepper_ctrl.home_axis("alt")
+    stepper_ctrl.alt_target = 3000
 
     event_bus.loop = asyncio.get_running_loop()
     event_bus.loop.call_soon(stepper_ctrl.start_tasks)
