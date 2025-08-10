@@ -1,21 +1,21 @@
 # core/homing.py
-
 from core.event_bus import event_bus
+from core.mode_manager import switch_mode
 import asyncio
 
-stepper_ctrl = None  # Set this in main.py after creation
+stepper_ctrl = None  # Set by main.py
 
 
 async def home_all_axes_and_center():
-    print("[Homing] Homing AZIMUTH axis...")
-    await stepper_ctrl.home_axis("az")
-    print("[Homing] Homing ALTITUDE axis...")
-    await stepper_ctrl.home_axis("alt")
-    print("[Homing] Both axes centered.")
+    # Parallel homing for both axes
+    await asyncio.gather(
+        stepper_ctrl.home_axis("az"),
+        stepper_ctrl.home_axis("alt")
+    )
+    print("[Homing] Both axes homed.")
 
 
 async def homing(_=None):
-    event_bus.emit("auto_homing_entered")
     try:
         await home_all_axes_and_center()
     except asyncio.CancelledError:
@@ -23,8 +23,8 @@ async def homing(_=None):
 
 
 def start_homing_mode(_=None):
-    from core.mode_manager import switch_mode
     switch_mode(homing())
 
 
-event_bus.subscribe("homing_mode_entered", start_homing_mode)
+# Align the event name with the menu item ("Auto Homing")
+event_bus.subscribe("auto_homing_entered", start_homing_mode)
